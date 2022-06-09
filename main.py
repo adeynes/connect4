@@ -181,18 +181,32 @@ def get_color(player):
         return Fore.RED
     if player == YELLOW:
         return Fore.YELLOW
-    return Fore.BLACK
+    return Fore.WHITE
     
 
 
 def display_grid(grid):
-    lines = ["|"] * HEIGHT
+    #lines = [get_color(DRAW) + "|"] * (HEIGHT*3+1)
+    #lines[0] = "+--+--+--+--+--+--+--+"
+    #lines = [get_color(DRAW) + "|"] * (HEIGHT*2)
+    lines = [get_color(DRAW) + "|"] * HEIGHT
     for j in range(HEIGHT-1, -1, -1):
         for i in range(LENGTH):
             if len(grid[i]) > j:
+                #lines[3*HEIGHT-3*j] = "+--+--+--+--+--+--+--+"
+                #lines[3*HEIGHT-1-3*j] += get_color(grid[i][j]) + "##" + get_color(DRAW) + "|"
+                #lines[3*HEIGHT-2-3*j] += get_color(grid[i][j]) + "##" + get_color(DRAW) + "|"
+                #symbol = choice(["#", "@", "$", "*", "%", "+", "€"])
+                #lines[2*HEIGHT-1-2*j] += get_color(grid[i][j]) + 2*symbol + get_color(DRAW) + "|"
+                #lines[2*HEIGHT-2-2*j] += get_color(grid[i][j]) + 2*symbol + get_color(DRAW) + "|"
                 lines[HEIGHT-1-j] += get_color(grid[i][j]) + "#" + get_color(DRAW) + "|"
             else:
-                lines[HEIGHT-1-j] += get_color(DRAW) + "O" + get_color(DRAW) + "|"
+                #lines[3*HEIGHT-3*j] = "+--+--+--+--+--+--+--+"
+                #lines[3*HEIGHT-1-3*j] += get_color(DRAW) + "OO" + get_color(DRAW) + "|"
+                #lines[3*HEIGHT-2-3*j] += get_color(DRAW) + "OO" + get_color(DRAW) + "|"
+                #lines[2*HEIGHT-1-2*j] += get_color(DRAW) + "  " + get_color(DRAW) + "|"
+                #lines[2*HEIGHT-2-2*j] += get_color(DRAW) + "  " + get_color(DRAW) + "|"
+                lines[HEIGHT-1-j] += get_color(DRAW) + " " + get_color(DRAW) + "|"
 
     print("\n\n")
 
@@ -272,5 +286,5 @@ def turn(grid, first_player, t):
 
 grid_ = [[] for _ in range(LENGTH)]
 counter = 1
-while turn(grid_, RED, counter):
-    counter += 1
+while turn(grid_, YELLOW, counter):
+    counter += 13
