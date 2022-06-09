@@ -16,6 +16,7 @@ HEIGHT = 6
 RED = 1
 YELLOW = -1
 DRAW = -2
+SIMULATION = 3
 NOT_TERMINAL = 0
 
 def legal_plays(grid):
@@ -105,16 +106,38 @@ def next_player(previous_player):
     return -previous_player
 
 
-def monte_carlo(grid, computer, tries = 200):
+def monte_carlo(grid, computer, tries = 1000):
     score = 0
     for k in range(tries):
         player = next_player(computer)
-        grid2 = [L[:] for L in grid]
-        while get_state(grid2) == NOT_TERMINAL:
-            do_play(grid2, choice(legal_plays(grid2)), player)
+        plays = []
+        
+        for _ in range(8):
+            if get_state(grid) != NOT_TERMINAL:
+                break
+            
+            has_played = False
+            
+            for i in legal_plays(grid):
+                grid2 = [L.copy() for L in grid]
+                do_play(grid2, i, player)
+                if get_state(grid2) == player:
+                    do_play(grid, i, player)
+                    has_played = True
+                    break
+            
+            if has_played:
+                break
+            
+            play = choice(legal_plays(grid))
+            do_play(grid, play, player)
+            plays.append(play)
             player = next_player(player)
+        
+        for play in plays:
+            grid[play].pop()
 
-        state = get_state(grid2)
+        state = get_state(grid)
         if state == computer:
             score += 1
         if state == next_player(computer):
@@ -123,88 +146,131 @@ def monte_carlo(grid, computer, tries = 200):
     return score
 
 
-def choose_play(grid):
+def choose_play(grid, t, computer):
     for i in legal_plays(grid):
         grid2 = [L.copy() for L in grid]
-        do_play(grid2, i, YELLOW)
-        if get_state(grid2) == YELLOW:
-            do_play(grid, i, YELLOW)
+        do_play(grid2, i, computer)
+        if get_state(grid2) == computer:
+            do_play(grid, i, computer)
             return
 
     for i in legal_plays(grid):
         grid2 = [L.copy() for L in grid]
-        do_play(grid2, i, RED)
-        if get_state(grid2) == RED:
-            do_play(grid, i, YELLOW)
+        do_play(grid2, i, next_player(computer))
+        if get_state(grid2) == next_player(computer):
+            do_play(grid, i, computer)
             return
 
     best = (-1, -9000)
     for i in legal_plays(grid):
-        score = monte_carlo(grid, YELLOW)
+        if t <= 4 and i not in [2, 3, 4]:
+            continue
+        grid2 = [L.copy() for L in grid]
+        do_play(grid2, i, computer)
+        score = monte_carlo(grid2, computer)
         if score > best[1]:
             best = (i, score)
 
-    do_play(grid, best[0], YELLOW)
+    do_play(grid, best[0], computer)
 
+
+from colorama import Fore
 
 def get_color(player):
     if player == RED:
-        return '\033[91m'
+        return Fore.RED
     if player == YELLOW:
-        return '\033[93m'
-    return '\033[0m'
+        return Fore.YELLOW
+    return Fore.BLACK
+    
 
 
 def display_grid(grid):
-    lines = [""] * HEIGHT
+    lines = ["|"] * HEIGHT
     for j in range(HEIGHT-1, -1, -1):
         for i in range(LENGTH):
             if len(grid[i]) > j:
-                lines[j] += get_color(grid[i][j]) + "#"
+                lines[HEIGHT-1-j] += get_color(grid[i][j]) + "#" + get_color(DRAW) + "|"
             else:
-                lines[j] += get_color(DRAW) + "O"
+                lines[HEIGHT-1-j] += get_color(DRAW) + "O" + get_color(DRAW) + "|"
 
     print("\n\n")
 
     for line in lines:
         print(line)
+    
+    print("\n")
 
 
-def turn(grid, first_player):
+def check_state(grid):
     state = get_state(grid)
     if state == DRAW:
+        display_grid(grid)
         print("Match nul !")
         return False
     if state == RED:
+        display_grid(grid)
         print("Rouge gagne !")
         return False
     if state == YELLOW:
+        display_grid(grid)
         print("Jaune gagne !")
         return False
+    
+    return True
 
+
+def turn(grid, first_player, t):
+    if first_player == SIMULATION:
+        display_grid(grid)
+        
+        choose_play(grid, t, RED)
+        
+        if not check_state(grid):
+            return False
+
+        choose_play(grid, t, YELLOW)
+        
+        if not check_state(grid):
+            return False
+    
     if first_player == RED:
+        display_grid(grid)
+        
+        i = int(input("Où jouer (0-" + str(LENGTH - 1) + ") ? "))
+        while i not in legal_plays(grid):
+            display_grid(grid)
+            i = int(input("Coup invalide. Où jouer (0-" + str(LENGTH - 1) + ") ? "))
+        do_play(grid, i, RED)
+        
+        if not check_state(grid):
+            return False
+
+        choose_play(grid, t, YELLOW)
+        
+        if not check_state(grid):
+            return False
+
+    if first_player == YELLOW:
+        choose_play(grid, t, YELLOW)
+        
+        if not check_state(grid):
+            return False
+
         display_grid(grid)
         i = int(input("Où jouer (0-" + str(LENGTH - 1) + ") ? "))
         while i not in legal_plays(grid):
             display_grid(grid)
             i = int(input("Coup invalide. Où jouer (0-" + str(LENGTH - 1) + ") ? "))
         do_play(grid, i, RED)
-
-        choose_play(grid)
-
-    else:
-        choose_play(grid)
-
-        i = int(input("Où jouer (0-" + str(LENGTH - 1) + ") ? "))
-        while i not in legal_plays(grid):
-            display_grid(grid)
-            i = int(input("Coup invalide. Où jouer (0-" + str(LENGTH - 1) + ") ? "))
-        do_play(grid, i, RED)
+        
+        if not check_state(grid):
+            return False
 
     return True
 
 
 grid_ = [[] for _ in range(LENGTH)]
-while turn(grid_, RED):
-    continue
-
+counter = 1
+while turn(grid_, RED, counter):
+    counter += 1
